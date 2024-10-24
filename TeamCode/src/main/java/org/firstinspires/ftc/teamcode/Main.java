@@ -5,6 +5,8 @@ import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.Servo;
 
+import com.acmerobotics.roadrunner.geometry.Pose2d;
+
 @TeleOp(name="RevHub Controller", group="TeleOp")
 public class Main extends OpMode {
 
@@ -18,8 +20,11 @@ public class Main extends OpMode {
 //    Motor 3 is Top Right
     private DcMotor Flm;
 
+//    Robotic Lift Arm
+    private DcMotor ArmLift;
+
     // Declare servo objects
-    private Servo servoTest;
+    private Servo ArmActuator;
 
     double tgtPower = 0;
 
@@ -36,9 +41,17 @@ public class Main extends OpMode {
     boolean dPadDown;
     boolean dPadLeft;
     boolean dPadRight;
+    boolean xButton;
+    boolean yButton;
+    boolean aButton;
+    boolean bButton;
+    boolean leftStickButton;
 
 //    Controller Variables
     double leftStickDeadZone = 0.05;
+
+    // Odometry localizer
+    private TwoWheelOdometryLocalizer localizer;
 
     @Override
     public void init() {
@@ -47,7 +60,11 @@ public class Main extends OpMode {
         Blm = hardwareMap.get(DcMotor.class, "Blm");
         Brm = hardwareMap.get(DcMotor.class, "Brm");
         Flm = hardwareMap.get(DcMotor.class, "Flm");
-        servoTest = hardwareMap.get(Servo.class, "servoTest");
+        ArmLift = hardwareMap.get(DcMotor.class, "ArmLift");
+        ArmActuator = hardwareMap.get(Servo.class, "ArmActuator");
+
+        // Initialize localizer
+        localizer = new TwoWheelOdometryLocalizer(hardwareMap);
 
         // Set motor directions (reverse right side to make tank drive work properly)
         Frm.setDirection(DcMotor.Direction.FORWARD);  // Left front motor
@@ -60,6 +77,7 @@ public class Main extends OpMode {
         Blm.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         Brm.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         Flm.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        ArmLift.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 
         telemetry.addData("Status", "Initialized");
         telemetry.update();
@@ -105,22 +123,11 @@ public class Main extends OpMode {
         dPadDown = gamepad1.dpad_down;
         dPadLeft = gamepad1.dpad_left;
         dPadRight = gamepad1.dpad_right;
-
-        // Telemetry data send input values to the driver station
-        telemetry.addData("Status", "Running");
-        telemetry.addData("Left Stick Horizontal", leftStickX);
-        telemetry.addData("Left Stick Vertical", leftStickY);
-        telemetry.addData("Right Stick Horizontal", rightStickX);
-        telemetry.addData("Right Stick Vertical", rightStickY);
-        telemetry.addData("Left Trigger", leftTrigger);
-        telemetry.addData("Right Trigger", rightTrigger);
-        telemetry.addData("Left Bumper", leftBumper);
-        telemetry.addData("Right Bumper", rightBumper);
-        telemetry.addData("D-Pad Up", dPadUp);
-        telemetry.addData("D-Pad Down", dPadDown);
-        telemetry.addData("D-Pad Left", dPadLeft);
-        telemetry.addData("D-Pad Right", dPadRight);
-        telemetry.update();
+        xButton = gamepad1.x;
+        yButton = gamepad1.y;
+        aButton = gamepad1.a;
+        bButton = gamepad1.b;
+        leftStickButton = gamepad1.left_stick_button;
 
 //        Speed and Control Variables
         double frmSpeed = 0;
@@ -233,16 +240,13 @@ public class Main extends OpMode {
             flmSpeed = -1;
         }
 
-        // check to see if we need to move the servo.
-        if(gamepad1.y) {
-            // move to 0 degrees.
-            servoTest.setPosition(0);
-        } else if (gamepad1.x || gamepad1.b) {
-            // move to 90 degrees.
-            servoTest.setPosition(0.5);
-        } else if (gamepad1.a) {
-            // move to 180 degrees.
-            servoTest.setPosition(1);
+//        If A button is pressed, the lift arm should move up, if B button is pressed, the lift arm should move down
+        if (aButton) {
+            ArmLift.setPower(1);
+        } else if (bButton) {
+            ArmLift.setPower(-1);
+        } else {
+            ArmLift.setPower(0);
         }
 
         // Set motor power based on controller input
@@ -250,16 +254,45 @@ public class Main extends OpMode {
         Blm.setPower(blmSpeed * -1);
         Brm.setPower(brmSpeed * -1);
         Flm.setPower(flmSpeed);
+
+        // Update the localizer
+        localizer.update();
+
+        // Get the estimated pose of the robot
+        Pose2d poseEstimate = localizer.getPoseEstimate();
+
+        // Telemetry data send input values to the driver station
+        telemetry.addData("Status", "Running");
+        telemetry.addData("Left Stick Horizontal", leftStickX);
+        telemetry.addData("Left Stick Vertical", leftStickY);
+        telemetry.addData("Right Stick Horizontal", rightStickX);
+        telemetry.addData("Right Stick Vertical", rightStickY);
+        telemetry.addData("Left Trigger", leftTrigger);
+        telemetry.addData("Right Trigger", rightTrigger);
+        telemetry.addData("Left Bumper", leftBumper);
+        telemetry.addData("Right Bumper", rightBumper);
+        telemetry.addData("D-Pad Up", dPadUp);
+        telemetry.addData("D-Pad Down", dPadDown);
+        telemetry.addData("D-Pad Left", dPadLeft);
+        telemetry.addData("D-Pad Right", dPadRight);
+
+        // Telemetry to display the robot's position
+        telemetry.addData("X Position (in)", poseEstimate.getX());
+        telemetry.addData("Y Position (in)", poseEstimate.getY());
+        telemetry.addData("Heading (deg)", Math.toDegrees(poseEstimate.getHeading()));
+
+        telemetry.update();
     }
 
-        public void stop() {
+    public void stop() {
         // Stop all motors when the op mode ends
         Frm.setPower(0);
         Blm.setPower(0);
         Brm.setPower(0);
         Flm.setPower(0);
-        servoTest.setPosition(0);
+
         telemetry.addData("Status", "Stopped");
         telemetry.update();
     }
+
 }
