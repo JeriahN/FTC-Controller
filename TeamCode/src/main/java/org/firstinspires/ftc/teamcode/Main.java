@@ -78,14 +78,22 @@ public class Main extends OpMode {
 
     // Controller Variables
     double leftStickDeadZone = 0.05;
+    double rightStickDeadZone = 0.05;
+    double rightTriggerDeadZone = 0.15;
 
 //    Arm Actuator Variables, the arm actuator is a servo that controls a servo lift based on the angle of the servo, the closer the servo variable gets to its maximum the more extended the actuator gets, the closer it gets to the minimum, the more the scissor lift contracts, d-pad up makes the intake spin in and d-pad down makes the intake spin out
     private final double actMin = 0;
     private final double actMax = 55;
+    private final double ALDumperMin = (double) 23 / 100;
+    private final double ALDumperMax = (double) 100 / 100;
     private double actRange = actMax - actMin;
+
+    private boolean actuatorBucketActive = false;
+    private boolean dPadRightActiveLast = false;
 
     @Override
     public void init() {
+//        Connect to hardware classes
         // Motor initialization
         Frm = hardwareMap.get(DcMotorEx.class, "Frm");
         Blm = hardwareMap.get(DcMotorEx.class, "Blm");
@@ -108,7 +116,7 @@ public class Main extends OpMode {
 //        rightEncoder = hardwareMap.get(DcMotorEx.class, "rightEncoder");
 //        backEncoder = hardwareMap.get(DcMotorEx.class, "backEncoder");
 
-        // Motor directions and modes
+        // Motor directions and modes, the motors need to run without encoders and directions need to be set
         Frm.setDirection(DcMotorEx.Direction.REVERSE);
         Blm.setDirection(DcMotorEx.Direction.FORWARD);
         Brm.setDirection(DcMotorEx.Direction.REVERSE);
@@ -207,21 +215,21 @@ public class Main extends OpMode {
         leftStickY = gamepad1.left_stick_y * -1;
         rightStickY = gamepad1.right_stick_y * -1;
 
-        leftTrigger = gamepad1.left_trigger;
-        rightTrigger = gamepad1.right_trigger;
+        leftTrigger = gamepad2.left_trigger;
+        rightTrigger = gamepad2.right_trigger;
 
         leftBumper = gamepad1.left_bumper;
         rightBumper = gamepad1.right_bumper;
 
-        dPadUp = gamepad1.dpad_up;
-        dPadDown = gamepad1.dpad_down;
-        dPadLeft = gamepad1.dpad_left;
-        dPadRight = gamepad1.dpad_right;
+        dPadUp = gamepad2.dpad_up;
+        dPadDown = gamepad2.dpad_down;
+        dPadLeft = gamepad2.dpad_left;
+        dPadRight = gamepad2.dpad_right;
 
-        a = gamepad1.a;
-        b = gamepad1.b;
-        x = gamepad1.x;
-        y = gamepad1.y;
+        a = gamepad2.a;
+        b = gamepad2.b;
+        x = gamepad2.x;
+        y = gamepad2.y;
 
 
         // Initialize Power Variables (Reset)
@@ -252,42 +260,54 @@ public class Main extends OpMode {
             RobotLiftRight.setPower(0);
         }
 
-//        Used to dump out piece
+//        Robot Drive Controls
+        // Strafe Controls
+        if (leftBumper) {
+            frmSpeed = -1;
+            blmSpeed = 1;
+        } else if (rightBumper) {
+            frmSpeed = 1;
+            blmSpeed = -1;
+        } 
+
+//        Tank Drive Controls
+        if (Math.abs(leftStickY) > leftStickDeadZone) {
+            flmSpeed = leftStickY;
+            blmSpeed = leftStickY;
+            telemetry.addData("Left Stick Y", leftStickY);
+        }
+
+        if (Math.abs(rightStickY) > rightStickDeadZone) {
+            frmSpeed = rightStickY;
+            brmSpeed = rightStickY;
+            telemetry.addData("Right Stick Y", rightStickY);
+        }
+
+//        Function to toggle DPad right on press
+        if (dPadRight && !dPadRightActiveLast) {
+            actuatorBucketActive = !actuatorBucketActive;
+        }
+        dPadRightActiveLast = dPadRight;
+
+        if (actuatorBucketActive) {
+            intakeDumper.setPosition(ALDumperMax);
+        } else {
+            intakeDumper.setPosition(ALDumperMin);
+        }
+
         if (dPadUp) {
             ArmLiftBucketDumper.setPosition(1);
         } else {
             ArmLiftBucketDumper.setPosition(0);
         }
 
-//        Robot Drive Controls
-//        Tank Drive Controls
-        if (Math.abs(leftStickY) > leftStickDeadZone) {
-            flmSpeed = rightStickY;
-            blmSpeed = rightStickY;
-        }
-        if (Math.abs(rightStickY) > leftStickDeadZone) {
-            frmSpeed = leftStickY;
-            brmSpeed = leftStickY;
-        }
-
-//        Strafe Controls
-        if (leftBumper) {
-            flmSpeed = -1;
-            frmSpeed = 1;
-            brmSpeed = -1;
-            blmSpeed = 1;
-        } else if (rightBumper) {
-            flmSpeed = 1;
-            frmSpeed = -1;
-            brmSpeed = 1;
-            blmSpeed = -1;
-        }
-
-
-
 //        Intake Controls (Pickup Piece)
 //        First set the target position and then calculate the correct position to linearize the arm position
-        tgtArmActuator = rightTrigger;
+        if (rightTrigger >= rightTriggerDeadZone) {
+            tgtArmActuator = rightTrigger;
+        } else {
+            tgtArmActuator = 0;
+        }
         armActuator.setPosition(calculateArmActuatorServoPos(tgtArmActuator));
         if (leftTrigger > 0) {
             if (dPadDown) {
@@ -298,11 +318,6 @@ public class Main extends OpMode {
         }
 
 //        Move piece from intake to bucket which can then be raised and dumped into scoring bin
-        if (dPadRight) {
-            intakeDumper.setPosition(1);
-        } else {
-            intakeDumper.setPosition(0);
-        }
 
 //        Set Power Levels
         Frm.setPower(frmSpeed);
@@ -354,6 +369,7 @@ public class Main extends OpMode {
             FtcDashboard.getInstance().stopCameraStream();
         }
     }
+
     public double calculateArmActuatorServoPos(double targetPosition) {
         return actMin + (targetPosition / actRange) * (actMax - actMin);
     }
