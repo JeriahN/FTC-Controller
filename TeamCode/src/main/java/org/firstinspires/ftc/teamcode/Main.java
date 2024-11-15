@@ -35,12 +35,14 @@ public class Main extends OpMode {
     private DcMotorEx RobotLiftLeft, RobotLiftRight;
 //    private DcMotorEx leftEncoder, rightEncoder, backEncoder;
     private DcMotorEx ArmLift;
+    private Servo ArmLiftBucketDumper;
 
 //    Servo Declarations
     private Servo armActuator;
 
 // The intake uses a servo programmed to be continuous to spin an intake wheel
     private CRServo armActuatorIntake;
+    private Servo intakeDumper;
 
 //    Target Powers
     private double tgtLeftJoy = 0;
@@ -89,15 +91,19 @@ public class Main extends OpMode {
         Blm = hardwareMap.get(DcMotorEx.class, "Blm");
         Brm = hardwareMap.get(DcMotorEx.class, "Brm");
         Flm = hardwareMap.get(DcMotorEx.class, "Flm");
-        ArmLift = hardwareMap.get(DcMotorEx.class, "ArmLift");
+
         RobotLiftLeft = hardwareMap.get(DcMotorEx.class, "RobotLiftLeft");
         RobotLiftRight = hardwareMap.get(DcMotorEx.class, "RobotLiftRight");
-        armActuatorIntake = hardwareMap.get(CRServo.class, "ArmActuatorIntake");
+
+        ArmLift = hardwareMap.get(DcMotorEx.class, "ArmLift");
+        ArmLiftBucketDumper = hardwareMap.get(Servo.class, "ALBDumper");
 
         // Servo initialization
         armActuator = hardwareMap.get(Servo.class, "ArmActuator");
+        armActuatorIntake = hardwareMap.get(CRServo.class, "ArmActuatorIntake");
+        intakeDumper = hardwareMap.get(Servo.class, "intakeDumper");
 
-        // Encoder initialization
+        // Encoder initialization NOT BEING USED RIGHT NOW
 //        leftEncoder = hardwareMap.get(DcMotorEx.class, "leftEncoder");
 //        rightEncoder = hardwareMap.get(DcMotorEx.class, "rightEncoder");
 //        backEncoder = hardwareMap.get(DcMotorEx.class, "backEncoder");
@@ -120,6 +126,8 @@ public class Main extends OpMode {
 
         ArmLift.setDirection(DcMotorEx.Direction.FORWARD);
         ArmLift.setMode(DcMotorEx.RunMode.RUN_WITHOUT_ENCODER);
+        ArmLiftBucketDumper.setDirection(Servo.Direction.FORWARD);
+        ArmLiftBucketDumper.setPosition(0);
 
         armActuatorIntake.setDirection(DcMotorEx.Direction.FORWARD);
 
@@ -167,6 +175,7 @@ public class Main extends OpMode {
         telemetry.update();
     }
 
+//    Robot IP Address used to host dashboard and return address
     public String getRobotControllerIpAddress() {
         try {
             List<NetworkInterface> interfaces = Collections.list(NetworkInterface.getNetworkInterfaces());
@@ -174,7 +183,7 @@ public class Main extends OpMode {
                 if (networkInterface.isUp() && !networkInterface.isLoopback()) {
                     List<InetAddress> addresses = Collections.list(networkInterface.getInetAddresses());
                     for (InetAddress address : addresses) {
-                        if (!address.isLoopbackAddress() && !address.isLinkLocalAddress() && address instanceof InetAddress) {
+                        if (!address.isLoopbackAddress() && !address.isLinkLocalAddress()) {
                             String ip = address.getHostAddress();
                             if (ip != null && !ip.contains(":")) { // Exclude IPv6 addresses
                                 return ip;
@@ -215,13 +224,14 @@ public class Main extends OpMode {
         y = gamepad1.y;
 
 
-        // Speed and Control Variables
+        // Initialize Power Variables (Reset)
         double frmSpeed = 0;
         double blmSpeed = 0;
         double brmSpeed = 0;
         double flmSpeed = 0;
+        double targetIntakeSpeed = 0;
 
-//        Make motors move forward based on A, B, X, Y
+//        Robot Lift Controls (Used to hangup robot)
         if (a) {
             tgtArmLift = 1;
         } else if (b) {
@@ -230,34 +240,7 @@ public class Main extends OpMode {
             tgtArmLift = 0;
         }
 
-//        Tank Drive Controls
-        if (Math.abs(leftStickY) > leftStickDeadZone) {
-            flmSpeed = rightStickY;
-            blmSpeed = rightStickY;
-        }
-        if (Math.abs(rightStickY) > leftStickDeadZone) {
-            frmSpeed = leftStickY;
-            brmSpeed = leftStickY;
-        }
-
-//        Arm Actuator Controls
-        //        Use the right trigger to control the arm actuator, the servo extension amount depends on how far the trigger is pressed.
-        tgtArmActuator = rightTrigger;
-//        Use trig and kinematics to ensure that arm actuator extends at constant speed, since the servo is attached to one bar which is attached to another which is then attached to the arm actuator, it will move at different speeds depending on the position, this needs to be corrected
-        armActuator.setPosition(calculateArmActuatorServoPos(tgtArmActuator));
-
-//      Control Intake Speed with Left Trigger and intake direction with d-pad
-        double targetIntakeSpeed = 0;
-
-        if (leftTrigger > 0) {
-            if (dPadDown) {
-                targetIntakeSpeed = leftTrigger;
-            } else {
-                targetIntakeSpeed = -leftTrigger;
-            }
-        }
-
-//        Arm Lift Controls
+//        Arm Lift Controls (Used to raise piece to bucket level)
         if (x) {
             RobotLiftLeft.setPower(1);
             RobotLiftRight.setPower(1);
@@ -269,7 +252,59 @@ public class Main extends OpMode {
             RobotLiftRight.setPower(0);
         }
 
-//        Set Power
+//        Used to dump out piece
+        if (dPadUp) {
+            ArmLiftBucketDumper.setPosition(1);
+        } else {
+            ArmLiftBucketDumper.setPosition(0);
+        }
+
+//        Robot Drive Controls
+//        Tank Drive Controls
+        if (Math.abs(leftStickY) > leftStickDeadZone) {
+            flmSpeed = rightStickY;
+            blmSpeed = rightStickY;
+        }
+        if (Math.abs(rightStickY) > leftStickDeadZone) {
+            frmSpeed = leftStickY;
+            brmSpeed = leftStickY;
+        }
+
+//        Strafe Controls
+        if (leftBumper) {
+            flmSpeed = -1;
+            frmSpeed = 1;
+            brmSpeed = -1;
+            blmSpeed = 1;
+        } else if (rightBumper) {
+            flmSpeed = 1;
+            frmSpeed = -1;
+            brmSpeed = 1;
+            blmSpeed = -1;
+        }
+
+
+
+//        Intake Controls (Pickup Piece)
+//        First set the target position and then calculate the correct position to linearize the arm position
+        tgtArmActuator = rightTrigger;
+        armActuator.setPosition(calculateArmActuatorServoPos(tgtArmActuator));
+        if (leftTrigger > 0) {
+            if (dPadDown) {
+                targetIntakeSpeed = leftTrigger;
+            } else {
+                targetIntakeSpeed = -leftTrigger;
+            }
+        }
+
+//        Move piece from intake to bucket which can then be raised and dumped into scoring bin
+        if (dPadRight) {
+            intakeDumper.setPosition(1);
+        } else {
+            intakeDumper.setPosition(0);
+        }
+
+//        Set Power Levels
         Frm.setPower(frmSpeed);
         Blm.setPower(blmSpeed);
         Brm.setPower(brmSpeed);
@@ -277,6 +312,7 @@ public class Main extends OpMode {
         ArmLift.setPower(tgtArmLift);
         armActuatorIntake.setPower(targetIntakeSpeed);
 
+//        Odometry Positional Data NOT BEING USED RIGHT NOW
         // Update the localizer
 //        localizer.update();
 
@@ -322,16 +358,8 @@ public class Main extends OpMode {
         return actMin + (targetPosition / actRange) * (actMax - actMin);
     }
 
-    public double getActRange() {
-        return actRange;
-    }
-
-    public void setActRange(double actRange) {
-        this.actRange = actRange;
-    }
-
     // Sample OpenCV Pipeline
-    public class SamplePipeline extends OpenCvPipeline {
+    public static class SamplePipeline extends OpenCvPipeline {
         @Override
         public Mat processFrame(Mat input) {
             // Process the input frame (e.g., image processing tasks)
