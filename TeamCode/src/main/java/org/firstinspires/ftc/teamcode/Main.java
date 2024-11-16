@@ -48,6 +48,11 @@ public class Main extends OpMode {
         Brm = hardwareMap.get(DcMotorEx.class, "Brm");
         Flm = hardwareMap.get(DcMotorEx.class, "Flm");
 
+        Frm.setDirection(DcMotorEx.Direction.REVERSE);
+        Blm.setDirection(DcMotorEx.Direction.FORWARD);
+        Brm.setDirection(DcMotorEx.Direction.REVERSE);
+        Flm.setDirection(DcMotorEx.Direction.REVERSE);
+
         RobotLiftLeft = hardwareMap.get(DcMotorEx.class, "RobotLiftLeft");
         RobotLiftRight = hardwareMap.get(DcMotorEx.class, "RobotLiftRight");
         ArmLift = hardwareMap.get(DcMotorEx.class, "ArmLift");
