@@ -1,12 +1,17 @@
 package org.firstinspires.ftc.teamcode;
 
+<<<<<<< Updated upstream
 import com.acmerobotics.dashboard.telemetry.TelemetryPacket;
 import com.acmerobotics.roadrunner.geometry.Pose2d;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+=======
+>>>>>>> Stashed changes
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
+import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.Servo;
+<<<<<<< Updated upstream
 import com.acmerobotics.dashboard.FtcDashboard;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
@@ -18,6 +23,8 @@ import org.firstinspires.ftc.vision.VisionPortal;
 import org.firstinspires.ftc.vision.apriltag.AprilTagDetection;
 import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor;
 import com.qualcomm.robotcore.hardware.CRServo;
+=======
+>>>>>>> Stashed changes
 
 // OpenCV Imports
 import org.openftc.easyopencv.OpenCvCamera;
@@ -30,6 +37,7 @@ import org.opencv.core.Mat;
 
 @TeleOp(name="RevHub Controller with Camera", group="TeleOp")
 public class Main extends OpMode {
+<<<<<<< Updated upstream
     // Motor declarations
     private DcMotorEx Frm, Blm, Brm, Flm;
     private DcMotorEx RobotLiftLeft, RobotLiftRight;
@@ -95,11 +103,30 @@ public class Main extends OpMode {
     public void init() {
 //        Connect to hardware classes
         // Motor initialization
+=======
+    //    Hardware Declarations
+    private DcMotorEx Frm, Blm, Brm, Flm;
+    private Servo clawRotater, claw;
+
+    double joystickleftX, joysticklefty, joystickrightx, joystickrighty;
+    boolean dPadUp, dPadDown, dPadLeft, dPadRight;
+    boolean bButton, xButton, aButton, yButton;
+    boolean bButtonLast, xButtonLast, aButtonLast, yButtonLast;
+    boolean clawRotaterActive = false, clawActive = false;
+    double frmPower, blmPower, brmPower, flmPower;
+
+    final double clawRotatePosMin = 0, clawRotatePosMax = 210;
+    final double clawPosMin = 0, clawPosMax = 180;
+
+    public void init() {
+        // Initialize motors and servos
+>>>>>>> Stashed changes
         Frm = hardwareMap.get(DcMotorEx.class, "Frm");
         Blm = hardwareMap.get(DcMotorEx.class, "Blm");
         Brm = hardwareMap.get(DcMotorEx.class, "Brm");
         Flm = hardwareMap.get(DcMotorEx.class, "Flm");
 
+<<<<<<< Updated upstream
         RobotLiftLeft = hardwareMap.get(DcMotorEx.class, "RobotLiftLeft");
         RobotLiftRight = hardwareMap.get(DcMotorEx.class, "RobotLiftRight");
 
@@ -178,11 +205,39 @@ public class Main extends OpMode {
 
         // Display the URL and dashboard status on telemetry
         telemetry.addData("FTC Dashboard URL", dashboardUrl);
+=======
+        clawRotater = hardwareMap.get(Servo.class, "clawRotater");
+        claw = hardwareMap.get(Servo.class, "claw");
 
-        telemetry.addData("Status", "Initialized");
-        telemetry.update();
+        // Set motor directions
+        Frm.setDirection(DcMotorSimple.Direction.FORWARD);
+        Blm.setDirection(DcMotorSimple.Direction.FORWARD);
+        Brm.setDirection(DcMotorSimple.Direction.FORWARD);
+        Flm.setDirection(DcMotorSimple.Direction.FORWARD);
+
+        joystickleftX = gamepad1.left_stick_x;
+        joysticklefty = gamepad1.left_stick_y;
+        joystickrightx = gamepad1.right_stick_x;
+        joystickrighty = gamepad1.right_stick_y;
+>>>>>>> Stashed changes
+
+        dPadUp = gamepad1.dpad_up;
+        dPadDown = gamepad1.dpad_down;
+        dPadLeft = gamepad1.dpad_left;
+        dPadRight = gamepad1.dpad_right;
+
+        bButton = gamepad1.b;
+        xButton = gamepad1.x;
+        aButton = gamepad1.a;
+        yButton = gamepad1.y;
+
+        frmPower = joystickrighty;
+        blmPower = joystickrighty;
+        brmPower = joysticklefty;
+        flmPower = joysticklefty;
     }
 
+<<<<<<< Updated upstream
 //    Robot IP Address used to host dashboard and return address
     public String getRobotControllerIpAddress() {
         try {
@@ -214,23 +269,37 @@ public class Main extends OpMode {
 
         leftStickY = gamepad1.left_stick_y * -1;
         rightStickY = gamepad1.right_stick_y * -1;
+=======
+    public void loop() {
+        // Initialize joysticks
+        joystickleftX = gamepad1.left_stick_x;
+        joysticklefty = gamepad1.left_stick_y;
+        joystickrightx = gamepad1.right_stick_x;
+        joystickrighty = gamepad1.right_stick_y;
+>>>>>>> Stashed changes
 
-        leftTrigger = gamepad2.left_trigger;
-        rightTrigger = gamepad2.right_trigger;
+        dPadUp = gamepad1.dpad_up;
+        dPadDown = gamepad1.dpad_down;
+        dPadLeft = gamepad1.dpad_left;
+        dPadRight = gamepad1.dpad_right;
 
-        leftBumper = gamepad1.left_bumper;
-        rightBumper = gamepad1.right_bumper;
+        bButton = gamepad1.b;
+        xButton = gamepad1.x;
+        aButton = gamepad1.a;
+        yButton = gamepad1.y;
 
-        dPadUp = gamepad2.dpad_up;
-        dPadDown = gamepad2.dpad_down;
-        dPadLeft = gamepad2.dpad_left;
-        dPadRight = gamepad2.dpad_right;
+        joysticklefty = gamepad1.left_stick_y;
+        joystickleftX = gamepad1.left_stick_x;
+        joystickrighty = gamepad1.right_stick_y;
+        joystickrightx = gamepad1.right_stick_x;
 
-        a = gamepad2.a;
-        b = gamepad2.b;
-        x = gamepad2.x;
-        y = gamepad2.y;
+//            Tank Drive Controls
+        frmPower = joystickrighty;
+        blmPower = joystickrighty;
+        brmPower = joysticklefty;
+        flmPower = joysticklefty;
 
+<<<<<<< Updated upstream
 
         // Initialize Power Variables (Reset)
         double frmSpeed = 0;
@@ -349,16 +418,105 @@ public class Main extends OpMode {
 
         // Send telemetry
         dashboard.sendTelemetryPacket(packet);
+=======
+        // Set motor powers
+        Frm.setPower(frmPower);
+        Blm.setPower(blmPower);
+        Brm.setPower(brmPower);
+        Flm.setPower(flmPower);
+
+//        // Control claw rotater with button B
+//        if (bButton) {
+//            clawRotater.setPosition(clawRotatePosMax);
+//            telemetry.addData("Claw Rotater Position", clawRotater.getPosition());
+//        } else if (xButton) {
+//            clawRotater.setPosition(0);
+//            telemetry.addData("Claw Rotater Position", clawRotater.getPosition());
+//        }
+//
+//        else {
+//            //clawRotater.setPosition(clawRotater.getPosition());
+//            telemetry.addData("Claw Rotater Position", clawRotater.getPosition());
+//        }
+//
+//        // Control claw with button A
+//        if (aButton) {
+//            claw.setPosition(claw.getPosition() + 0.1);
+//            telemetry.addData("Claw Position", claw.getPosition());
+//        } else if (yButton) {
+//            claw.setPosition(claw.getPosition() - 0.1);
+//            telemetry.addData("Claw Position", claw.getPosition());
+//        } else {
+//            claw.setPosition(claw.getPosition());
+//            telemetry.addData("Claw Position", claw.getPosition());
+//        }
+
+//        Toggle A, and B buttons on press
+//        if (bButton != bButtonLast) {
+//            if (bButton) {
+//                clawRotaterActive = !clawRotaterActive;
+//                telemetry.addData("Claw Rotater Active", clawRotaterActive);
+//            }
+//            bButtonLast = bButton;
+//            telemetry.addData("Claw Rotater Active", clawRotaterActive);
+//        }
+
+//        if (clawRotaterActive) {
+            if (bButton) {
+                if (bButtonLast) {
+                    clawRotater.setPosition((clawRotatePosMin));
+                    bButtonLast = false;
+                    telemetry.addData("Claw Rotater Position", clawRotater.getPosition());
+                } else {
+                    clawRotater.setPosition(clawRotatePosMax);
+                    bButtonLast = true;
+                    telemetry.addData("Claw Rotater Position", clawRotater.getPosition());
+                }
+            }
+//        }
+
+
+
+//        Strafe using omni wheels
+        if (dPadLeft) {
+//            Strafe Left
+            Flm.setPower(0.5);
+            Brm.setPower(0.5);
+            Frm.setPower(-0.5);
+            Blm.setPower(-0.5);
+        } else if (dPadRight) {
+//            Strafe Right
+            Flm.setPower(-0.5);
+            Brm.setPower(-0.5);
+            Frm.setPower(0.5);
+            Blm.setPower(0.5);
+
+        } else if (dPadUp) {
+            //            Drive Forward
+            Flm.setPower(0.5);
+            Brm.setPower(-0.5);
+            Frm.setPower(0.5);
+            Blm.setPower(-0.5);
+        } else if (dPadDown) {
+            //            Drive Backward
+            Flm.setPower(-0.5);
+            Brm.setPower(0.5);
+            Frm.setPower(-0.5);
+            Blm.setPower(0.5);
+        }
+
+        telemetry.addData("Status", "Running");
+>>>>>>> Stashed changes
         telemetry.update();
     }
 
-    @Override
     public void stop() {
         // Stop all motors when the op mode ends
         Frm.setPower(0);
         Blm.setPower(0);
         Brm.setPower(0);
         Flm.setPower(0);
+<<<<<<< Updated upstream
         armActuator.setPosition(0);
         telemetry.addData("Status", "Stopped");
         telemetry.update();
@@ -383,6 +541,10 @@ public class Main extends OpMode {
             // For now, just return the input frame
             return input;
         }
+=======
+        clawRotater.setPosition(0);
+        claw.setPosition(0);
+>>>>>>> Stashed changes
     }
 }
 
